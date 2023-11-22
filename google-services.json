@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "501926629967",
+    "firebase_url": "https://ai-chatbot-ms-default-rtdb.firebaseio.com",
+    "project_id": "ai-chatbot-ms",
+    "storage_bucket": "ai-chatbot-ms.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501926629967:android:05196f0495067e1ac0503a",
+        "android_client_info": {
+          "package_name": "app.zeeteef.aichatbot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "501926629967-h9jh3hjgi5parro3jmtu8f3ajac51e59.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.zeeteef.aichatbot",
+            "certificate_hash": "39ea4949ed4a9a23cd1adf08c528496f25814ab9"
+          }
+        },
+        {
+          "client_id": "501926629967-j0u12uhfl86ggg8p7ajurpo3ae0l1aiu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrwWf3TZAP6GXakR1XwUEe14JnIaNNqKA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "501926629967-j0u12uhfl86ggg8p7ajurpo3ae0l1aiu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

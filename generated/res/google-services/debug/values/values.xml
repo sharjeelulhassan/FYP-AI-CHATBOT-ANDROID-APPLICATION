@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_web_client_id" translatable="false">501926629967-j0u12uhfl86ggg8p7ajurpo3ae0l1aiu.apps.googleusercontent.com</string>
+    <string name="firebase_database_url" translatable="false">https://ai-chatbot-ms-default-rtdb.firebaseio.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">501926629967</string>
+    <string name="google_api_key" translatable="false">AIzaSyBrwWf3TZAP6GXakR1XwUEe14JnIaNNqKA</string>
+    <string name="google_app_id" translatable="false">1:501926629967:android:05196f0495067e1ac0503a</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBrwWf3TZAP6GXakR1XwUEe14JnIaNNqKA</string>
+    <string name="google_storage_bucket" translatable="false">ai-chatbot-ms.appspot.com</string>
+    <string name="project_id" translatable="false">ai-chatbot-ms</string>
+</resources>
