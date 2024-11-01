@@ -1,0 +1,203 @@
+MODULE: health_proc
+
+(1) sale_reports.py
+
+__all__ = ['StockInventoryReportStart','WizardStockInventoryReport','StockInventoryDetailsReport']
+
+class StockInventoryReportStart(ModelView):
+    'Stock Inventory Report Start'
+    __name__ = 'health.proc.stock.inventory.start'
+
+    # Add date fields along with warehouse and sub_store
+    warehouse = fields.Many2One(
+        'stock.location', "Warehouse", required=True,
+        domain=[('type', '=', 'warehouse')],
+    )
+    sub_store = fields.Many2One('stock.location', "Sub Store", required=True)
+
+    category = fields.Many2One('product.category', 'Category')
+    form = fields.Many2One('gnuhealth.drug.form', 'Form')
+
+    datefrom = fields.Date('From Date', required=True)  
+    dateto = fields.Date('To Date', required=True)      
+
+    @staticmethod
+    def default_datefrom():
+        return datetime.now().date()
+
+    @staticmethod
+    def default_dateto():
+        return datetime.now().date()
+
+
+class WizardStockInventoryReport(Wizard):
+    'Stock Inventory Report Wizard'
+    __name__ = 'health.proc.stock.inventory.wizard'
+
+    # Starting state, where the form is shown to the user
+    start = StateView('health.proc.stock.inventory.start',
+        'health_proc.stock_inventory_report_start_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Generate Report', 'print_', 'tryton-print', default=True),
+        ]
+    )
+
+    # Defining the report action
+    print_ = StateReport('health.proc.stock.inventory.details.report')
+
+    # Method for data collection and report action execution
+    def do_print_(self, action):
+        data = {
+            'warehouse': self.start.warehouse.id,
+            'sub_store': self.start.sub_store.id,
+            'category': self.start.category.id if self.start.category else None,
+            'form': self.start.form.id if self.start.form else None,
+            'datefrom': self.start.datefrom,  
+            'dateto': self.start.dateto,  
+            
+    
+        }
+        return action, data
+
+    # Transition to end after the report generation
+    def transition_print_(self):
+        return 'end'
+
+
+class StockInventoryDetailsReport(Report):
+    __name__ = 'health.proc.stock.inventory.details.report'   
+
+    @classmethod
+    def get_context(cls, records, header, data):  
+        warehouse_id = data['warehouse']  # Used only as a filter, not for display
+        sub_store_id = data['sub_store']
+        category = data['category']
+        form = data['form']
+        date_from = data.get('datefrom')
+        date_to = data.get('dateto')
+
+
+        StockLocation = Pool().get('stock.location')
+        sub_store = StockLocation(sub_store_id) if sub_store_id else None
+
+        logging.error("================== called the get_context for summary report=========================")
+        logging.info(data)
+
+        # Adjust the query to include warehouse as a filter but not in the report display
+        query = """
+            SELECT lot.number as lot, templates.name, SUM(moves.quantity) as quantity, 
+                TO_CHAR(lot.expiration_date, 'MM/DD/YYYY') as expiration_date
+            FROM product_template as templates
+            JOIN product_product as products ON templates.id = products.template
+            JOIN stock_lot as lot ON products.id = lot.product
+            JOIN stock_move as moves ON lot.id = moves.lot
+            JOIN stock_location as locations ON moves.to_location = locations.id
+            JOIN product_category pc on templates.account_category = pc.id 
+            JOIN gnuhealth_medicament gm on products.id = gm."name" 
+            JOIN gnuhealth_drug_form gdf on gm.form = gdf.id 
+            WHERE locations.id = %s AND locations.parent = %s
+                AND (%s IS NULL OR pc.id = %s)
+                AND (%s IS NULL OR gdf.id = %s)
+            GROUP BY lot.number, templates.name, lot.expiration_date
+        """
+        
+        cursor = Transaction().connection.cursor()
+        cursor.execute(query, (sub_store_id, warehouse_id, category, category,form, form))
+        all_recs = cursor.fetchall()
+        
+        stock_lines = [{
+            'lot': rec[0],
+            'product': rec[1],
+            'quantity': rec[2],
+            'expiration_date': rec[3],
+        } for rec in all_recs]
+
+        # Prepare report context with only sub_store, date_from, and date_to for display
+        report_context = super(StockInventoryDetailsReport, cls).get_context(records, header, data)
+        report_context['stock_lines'] = stock_lines
+        report_context['sub_store'] = sub_store.rec_name if sub_store else None
+        report_context['date_from'] = date_from
+        report_context['date_to'] = date_to
+
+        return report_context
+
+(2) __init__.py:
+
+def register():
+    Pool.register(
+        StockInventoryReportStart,
+        module='health_proc', type_='model')
+    Pool.register(
+
+        WizardStockInventoryReport,
+        module='health_proc', type_='wizard')
+        
+    Pool.register(
+
+        StockInventoryDetailsReport,
+        module='health_proc', type_='report')
+
+
+(3) view: stock_inventory_report_start_view_form.xml
+
+<?xml version="1.0"?>
+<form>
+   <label name="warehouse"/>
+   <field name="warehouse" on_change="on_change_warehouse"/>
+   
+   <label name="sub_store"/>
+   <field name="sub_store"/>
+
+   <label name="category"/>
+   <field name="category"/>
+   
+   <label name="form"/>
+   <field name="form"/>
+   
+   <label name="datefrom"/>
+   <field name="datefrom"/>
+   
+   <label name="dateto"/>
+   <field name="dateto"/>
+</form>
+
+
+(4) Reports:
+stock_inventory_detailed_report.ods
+
+(the ods file attached to this document.)
+
+
+(5) anth_reports.xml:
+
+        <!-- Stock Inventory Detailed Report -->
+        <record model="ir.action.report" id="stock_inventory_detailed_report">
+            <field name="name">Stock Inventory Report</field>
+            <field name="report_name">health.proc.stock.inventory.details.report</field>
+            <field name="model"></field>
+            <field name="template_extension">ods</field>
+            <field name="report">health_proc/report/stock_inventory_detailed_report.ods</field>
+        </record>
+
+
+(6) health_proc_view.xml:
+
+    <record model="ir.ui.view" id="stock_inventory_report_start_view_form">
+        <field name="model">health.proc.stock.inventory.start</field>
+        <field name="type">form</field>
+        <field name="name">stock_inventory_report_start_view_form</field>
+    </record>
+
+
+    <record model="ir.action.wizard" id="wizard_stock_inventory_report">
+        <field name="name">Stock Inventory Report</field>
+        <field name="wiz_name">health.proc.stock.inventory.wizard</field>
+    </record>
+
+
+    <menuitem parent="menu_proc_reports_parent" action="wizard_stock_inventory_report"
+        id="menu_stock_inventory_report" icon="tryton-print"/>
+
+
+
+
